@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Maratón Bits</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: transparent;
+      overflow: hidden;
+      width: 800px;
+      height: 160px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 10px;
+    }
+
+    /* ── CONTENEDOR ── */
+    #widget {
+      width: 780px;
+      background: rgba(0,0,0,0.82);
+      border: 1px solid rgba(180,0,0,0.6);
+      border-bottom: 2px solid #c00;
+      padding: 8px 14px 10px;
+      position: relative;
+      backdrop-filter: blur(4px);
+    }
+
+    /* scanlines sutiles */
+    #widget::before {
+      content:'';
+      position:absolute;
+      inset:0;
+      background: repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.08) 3px,rgba(0,0,0,0.08) 4px);
+      pointer-events:none;
+      z-index:10;
+    }
+
+    /* ── FILA SUPERIOR ── */
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .channels {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .ch {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: #bbb;
+      letter-spacing: 0.5px;
+    }
+
+    .ch-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .ch-dot.c1 { background:#c00; box-shadow:0 0 5px #c00; }
+    .ch-dot.c2 { background:#e05; box-shadow:0 0 5px #e05; }
+
+    .ch-val {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 15px;
+      color: #fff;
+      letter-spacing: 1px;
+    }
+
+    .sep { color: #333; font-size: 11px; }
+
+    .total-area {
+      text-align: right;
+    }
+
+    .total-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      color: #fff;
+      letter-spacing: 2px;
+      line-height: 1;
+    }
+
+    .total-goal {
+      font-size: 11px;
+      color: #555;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    /* ── BARRA ── */
+    .bar-outer {
+      position: relative;
+      height: 22px;
+      background: #111;
+      border: 1px solid #222;
+      overflow: visible;
+      margin-bottom: 4px;
+    }
+
+    /* canal 2 (base, va de 0 al total) */
+    #bar2 {
+      position: absolute;
+      inset: 0;
+      width: 0%;
+      background: linear-gradient(90deg, #700030, #c0004a, #e0005a);
+      transition: width 1s cubic-bezier(.23,1,.32,1);
+    }
+
+    /* canal 1 (encima, solo sus bits) */
+    #bar1 {
+      position: absolute;
+      inset: 0;
+      width: 0%;
+      background: linear-gradient(90deg, #6b0000, #bb0000, #ee1111);
+      transition: width 1s cubic-bezier(.23,1,.32,1) 0.05s;
+    }
+
+    /* brillo */
+    .bar-outer::after {
+      content:'';
+      position:absolute;
+      top:0;left:0;right:0;
+      height:35%;
+      background:linear-gradient(180deg,rgba(255,255,255,0.06),transparent);
+      pointer-events:none;
+      z-index:3;
+    }
+
+    /* porcentaje */
+    .bar-pct {
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-family:'Bebas Neue',sans-serif;
+      font-size:15px;
+      letter-spacing:2px;
+      color:#fff;
+      text-shadow:0 1px 3px #000;
+      z-index:4;
+    }
+
+    /* ── HITOS ── */
+    .milestones {
+      display: flex;
+      gap: 6px;
+      margin-top: 7px;
+    }
+
+    .ms {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: #0d0d0d;
+      border: 1px solid #222;
+      border-left: 2px solid #2a2a2a;
+      padding: 4px 7px;
+      min-width: 0;
+      transition: border-color 0.4s, background 0.4s;
+    }
+
+    .ms.reached {
+      border-left-color: #c00;
+      background: rgba(180,0,0,0.08);
+    }
+
+    .ms.next {
+      border-left-color: #ff4444;
+      background: rgba(255,50,50,0.06);
+      animation: pulse-next 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-next {
+      0%,100% { box-shadow: none; }
+      50%      { box-shadow: 0 0 8px rgba(255,50,50,0.2); }
+    }
+
+    .ms-emoji {
+      font-size: 14px;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .ms-info {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .ms-text {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: #555;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .ms-bits {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 11px;
+      color: #383838;
+      letter-spacing: 1px;
+      line-height: 1;
+    }
+
+    .ms.reached .ms-text { color: #cc3333; }
+    .ms.reached .ms-bits { color: #771111; }
+    .ms.next    .ms-text { color: #ff6666; }
+    .ms.next    .ms-bits { color: #882222; }
+
+    /* ── NOTIFICACIÓN ── */
+    #notif {
+      position: fixed;
+      top: 10px;
+      right: -500px;
+      background: rgba(0,0,0,0.9);
+      border-left: 3px solid #c00;
+      border: 1px solid #330000;
+      border-left: 3px solid #c00;
+      padding: 7px 14px;
+      font-family: 'Rajdhani', sans-serif;
+      transition: right 0.4s cubic-bezier(.23,1,.32,1);
+      z-index: 90;
+    }
+
+    #notif.show { right: 10px; }
+
+    .notif-top {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.5px;
+    }
+
+    .notif-top b { color: #ff4444; }
+
+    .notif-bot {
+      font-size: 11px;
+      color: #666;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── CELEBRACIÓN ── */
+    #cel {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100;
+      opacity: 0;
+      transition: opacity 0.3s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #cel.show { opacity: 1; }
+
+    .cel-glow {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(200,0,0,0.3) 0%, transparent 65%);
+    }
+
+    .cel-main {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 56px;
+      color: #fff;
+      letter-spacing: 5px;
+      text-shadow: 0 0 25px #c00, 0 0 50px #c00;
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      line-height: 1;
+    }
+
+    .cel-desc {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      color: #ff4444;
+      letter-spacing: 3px;
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      margin-top: 4px;
+      max-width: 600px;
+      line-height: 1.2;
+    }
+
+    /* partículas */
+    .particle {
+      position: fixed;
+      font-size: 16px;
+      animation: fall 1.6s ease-in forwards;
+      pointer-events: none;
+      z-index: 99;
+    }
+
+    @keyframes fall {
+      0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(115vh) rotate(540deg); opacity: 0; }
+    }
+
+    /* conn dots */
+    .cdot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #333;
+      margin-left: 3px;
+      vertical-align: middle;
+      transition: background 0.4s;
+    }
+    .cdot.ok   { background: #4caf50; box-shadow: 0 0 4px #4caf50; }
+    .cdot.err  { background: #e83333; }
+    .cdot.wait { background: #ff9800; animation: blink 1s infinite; }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  </style>
+</head>
+<body>
+
+<div id="widget">
+
+  <div class="top-row">
+    <div class="channels">
+      <div class="ch">
+        <div class="ch-dot c1"></div>
+        mariotq
+        <span class="ch-val" id="v1">0</span>
+        <span class="cdot" id="d1"></span>
+      </div>
+      <div class="sep">|</div>
+      <div class="ch">
+        <div class="ch-dot c2"></div>
+        Akim
+        <span class="ch-val" id="v2">0</span>
+        <span class="cdot" id="d2"></span>
+      </div>
+    </div>
+    <div class="total-area">
+      <div class="total-num" id="tot">0 <span style="font-size:13px;color:#555;letter-spacing:1px">BITS</span></div>
+      <div class="total-goal" id="goal-lbl">META: 77,000</div>
+    </div>
+  </div>
+
+  <div class="bar-outer" id="bar-outer">
+    <div id="bar2"></div>
+    <div id="bar1"></div>
+    <div class="bar-pct" id="bpct">0%</div>
+  </div>
+
+  <div class="milestones" id="milestones"></div>
+
+</div>
+
+<!-- notificación -->
+<div id="notif">
+  <div class="notif-top" id="ntop">usuario donó <b>0</b> bits</div>
+  <div class="notif-bot" id="nbot">en el canal de mariotq</div>
+</div>
+
+<!-- celebración -->
+<div id="cel">
+  <div class="cel-glow"></div>
+  <div class="cel-main" id="cmain">¡META!</div>
+  <div class="cel-desc" id="cdesc"></div>
+</div>
+
+<script>
+// ── Configuración de hitos ──────────────────
+const MILESTONES = [
+  { bits: 10000, label: '🥚 Huevo en la cabeza' },
+  { bits: 30000, label: '🩱 Tepetongo en traje de baño' },
+  { bits: 50000, label: '⛺ Acampar' },
+  { bits: 77000, label: '🏖️ Ir a la playa' },
+];
+
+const MAX_GOAL = 77000;
+const ID1   = '135201683';
+const ID2   = '75262446';
+const TOKEN1 = '8qmawi051thi3twpknppvxnrpygph2';
+const TOKEN2 = 'gp762nuuoqcoxypju8c569th9wz7q5';
+
+// ── Estado ──────────────────────────────────
+const S = { b1: 0, b2: 0 };
+const triggered = new Set();
+let notifTimer = null;
+
+// persistencia
+function save() {
+  localStorage.setItem('mbits', JSON.stringify({ b1: S.b1, b2: S.b2 }));
+}
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem('mbits') || '{}');
+    if (d.b1) S.b1 = d.b1;
+    if (d.b2) S.b2 = d.b2;
+  } catch(e){}
+}
+
+// ── Renderizar hitos ─────────────────────────
+function buildMilestones() {
+  const cont = document.getElementById('milestones');
+  cont.innerHTML = '';
+  MILESTONES.forEach(m => {
+    // separa emoji del texto
+    const parts = m.label.match(/^(\S+)\s(.+)$/);
+    const emoji = parts ? parts[1] : '🎯';
+    const text  = parts ? parts[2] : m.label;
+    const el = document.createElement('div');
+    el.className = 'ms';
+    el.id = 'ms_' + m.bits;
+    el.innerHTML = `
+      <div class="ms-emoji">${emoji}</div>
+      <div class="ms-info">
+        <div class="ms-text">${text}</div>
+        <div class="ms-bits">${(m.bits/1000).toFixed(0)}K BITS</div>
+      </div>`;
+    cont.appendChild(el);
+  });
+}
+
+// ── UI ────────────────────────────────────────
+function updateUI() {
+  const total = S.b1 + S.b2;
+  const pct   = Math.min(100, (total / MAX_GOAL) * 100);
+  const pct1  = Math.min(100, (S.b1  / MAX_GOAL) * 100);
+
+  document.getElementById('tot').innerHTML  = `${total.toLocaleString('es-MX')} <span style="font-size:13px;color:#555;letter-spacing:1px">BITS</span>`;
+  document.getElementById('v1').textContent = S.b1.toLocaleString('es-MX');
+  document.getElementById('v2').textContent = S.b2.toLocaleString('es-MX');
+  document.getElementById('bpct').textContent = pct.toFixed(1) + '%';
+  document.getElementById('bar1').style.width = pct1 + '%';
+  document.getElementById('bar2').style.width = pct  + '%';
+
+  // milestone classes
+  let nextSet = false;
+  MILESTONES.forEach(m => {
+    const el = document.getElementById('ms_' + m.bits);
+    if (!el) return;
+    if (total >= m.bits) {
+      el.className = 'ms reached';
+    } else if (!nextSet) {
+      el.className = 'ms next';
+      nextSet = true;
+    } else {
+      el.className = 'ms';
+    }
+  });
+
+  // check milestone triggers
+  MILESTONES.forEach(m => {
+    if (total >= m.bits && !triggered.has(m.bits)) {
+      triggered.add(m.bits);
+      celebrate(m);
+    }
+  });
+
+  save();
+}
+
+// ── Celebración ───────────────────────────────
+function celebrate(m) {
+  const el = document.getElementById('cel');
+  document.getElementById('cmain').textContent = m.bits === MAX_GOAL ? '¡META ALCANZADA!' : '¡HITO DESBLOQUEADO!';
+  document.getElementById('cdesc').textContent = m.label;
+  el.classList.add('show');
+  spawnParticles();
+  setTimeout(() => el.classList.remove('show'), m.bits === MAX_GOAL ? 7000 : 4000);
+}
+
+function spawnParticles() {
+  const emojis = ['🔥','⚡','💎','⭐','🎉'];
+  for (let i = 0; i < 30; i++) {
+    setTimeout(() => {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.fontSize = (12 + Math.random() * 14) + 'px';
+      p.style.animationDelay = Math.random() * 0.5 + 's';
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 2200);
+    }, i * 35);
+  }
+}
+
+// ── Notificación ──────────────────────────────
+let notifQ = [];
+let notifShowing = false;
+
+function queueNotif(user, amount, ch) {
+  notifQ.push({ user, amount, ch });
+  if (!notifShowing) showNextNotif();
+}
+
+function showNextNotif() {
+  if (!notifQ.length) { notifShowing = false; return; }
+  notifShowing = true;
+  const { user, amount, ch } = notifQ.shift();
+  document.getElementById('ntop').innerHTML = `${user} donó <b>${amount.toLocaleString('es-MX')}</b> bits`;
+  document.getElementById('nbot').textContent = 'en el canal de ' + ch;
+  const el = document.getElementById('notif');
+  el.classList.add('show');
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(showNextNotif, 500);
+  }, 3500);
+}
+
+// ── EventSub WebSocket ────────────────────────
+function dot(n, state) {
+  const el = document.getElementById('d' + n);
+  el.className = 'cdot ' + state;
+}
+
+async function subscribeCheer(sessionId, broadcasterId, token) {
+  const t = token.startsWith('oauth:') ? token.slice(6) : token;
+
+  // Obtener client_id del token
+  const valRes = await fetch('https://id.twitch.tv/oauth2/validate', {
+    headers: { 'Authorization': 'OAuth ' + t }
+  });
+  if (!valRes.ok) throw new Error('Token inválido');
+  const val = await valRes.json();
+  const clientId = val.client_id;
+
+  await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + t,
+      'Client-Id': clientId,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      type: 'channel.cheer',
+      version: '1',
+      condition: { broadcaster_user_id: broadcasterId },
+      transport: { method: 'websocket', session_id: sessionId }
+    })
+  });
+}
+
+function connectPS(id, token, ch) {
+  dot(ch, 'wait');
+  const ws = new WebSocket('wss://eventsub.wss.twitch.tv/ws');
+
+  ws.onmessage = async (ev) => {
+    const msg = JSON.parse(ev.data);
+    const type = msg.metadata?.message_type;
+
+    if (type === 'session_welcome') {
+      const sessionId = msg.payload.session.id;
+      try {
+        await subscribeCheer(sessionId, id, token);
+        dot(ch, 'ok');
+      } catch(e) {
+        console.error('EventSub subscribe error ch' + ch, e);
+        dot(ch, 'err');
+      }
+    }
+
+    if (type === 'notification') {
+      try {
+        const event  = msg.payload.event;
+        const amount = event.bits;
+        const user   = event.user_name || 'Anónimo';
+        const name   = ch === 1 ? 'mariotq' : 'Akim';
+        if (ch === 1) S.b1 += amount;
+        else          S.b2 += amount;
+        updateUI();
+        queueNotif(user, amount, name);
+      } catch(e) {}
+    }
+
+    if (type === 'session_reconnect') {
+      ws.close();
+      setTimeout(() => connectPS(id, token, ch), 500);
+    }
+  };
+
+  ws.onerror = () => dot(ch, 'err');
+  ws.onclose = () => {
+    dot(ch, 'err');
+    setTimeout(() => connectPS(id, token, ch), 5000);
+  };
+}
+
+// ── Init ─────────────────────────────────────
+load();
+buildMilestones();
+updateUI();
+connectPS(ID1, TOKEN1, 1);
+connectPS(ID2, TOKEN2, 2);
+</script>
+</body>
+</html>
