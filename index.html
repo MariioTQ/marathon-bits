@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Maratón Bits</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: transparent;
+      overflow: hidden;
+      width: 1280px;
+      height: 70px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+    }
+
+    /* ══ CONTENEDOR ESTILO ESPN ══ */
+    #ticker-bar {
+      width: 1280px;
+      height: 70px;
+      display: flex;
+      position: relative;
+    }
+
+    /* ── BLOQUE IZQUIERDO: progreso ── */
+    #left-block {
+      flex-shrink: 0;
+      width: 230px;
+      height: 100%;
+      background: rgba(0,0,0,0.88);
+      border-right: 3px solid #c00;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 12px;
+      gap: 4px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .left-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: #c00;
+    }
+
+    .left-total {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      color: #fff;
+      letter-spacing: 1px;
+      line-height: 1;
+    }
+
+    .left-total small {
+      font-size: 11px;
+      color: #666;
+      letter-spacing: 1px;
+    }
+
+    .mini-bar-wrap {
+      height: 5px;
+      background: rgba(255,255,255,0.08);
+      position: relative;
+    }
+
+    #mini-bar2 {
+      position: absolute; inset: 0; width: 0%;
+      background: #ff8c00;
+      transition: width 1s cubic-bezier(.23,1,.32,1);
+    }
+
+    #mini-bar1 {
+      position: absolute; inset: 0; width: 0%;
+      background: #ee2222;
+      transition: width 1s cubic-bezier(.23,1,.32,1) 0.05s;
+    }
+
+    .left-channels {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .lch {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: #aaa;
+    }
+
+    .lch-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .lch-dot.c1 { background: #ee2222; }
+    .lch-dot.c2 { background: #ff8c00; }
+    .lch b { color: #fff; font-size: 12px; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.5px; }
+
+    .cdot { display:inline-block; width:4px; height:4px; border-radius:50%; background:#333; margin-left:2px; vertical-align:middle; transition:background 0.4s; }
+    .cdot.ok   { background:#4caf50; }
+    .cdot.err  { background:#e83333; }
+    .cdot.wait { background:#ff9800; animation:blink 1s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── BLOQUE CENTRAL: label fijo ── */
+    #center-label {
+      flex-shrink: 0;
+      width: 54px;
+      height: 100%;
+      background: #c00;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      transform: rotate(180deg);
+      z-index: 2;
+    }
+
+    #center-label span {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: #fff;
+    }
+
+    /* ── BLOQUE DERECHO: ticker ── */
+    #right-ticker {
+      flex: 1;
+      height: 100%;
+      background: rgba(0,0,0,0.82);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* el track que se mueve */
+    #ticker-track {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      white-space: nowrap;
+      position: absolute;
+      left: 0; top: 0;
+      /* animación aplicada por JS */
+    }
+
+    .tick-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 28px;
+      height: 100%;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+
+    .tick-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.05);
+      padding: 2px 5px;
+      flex-shrink: 0;
+    }
+
+    .tick-item.reached .tick-num { color: rgba(200,60,60,0.6); background: rgba(200,0,0,0.08); }
+    .tick-item.next    .tick-num { color: #ff8c00; background: rgba(255,140,0,0.1); }
+
+    .tick-bits {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 1px;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .tick-item.reached .tick-bits { color: rgba(200,60,60,0.5); text-decoration: line-through; }
+    .tick-item.next    .tick-bits { color: #ff8c00; }
+
+    .tick-sep {
+      width: 1px; height: 28px;
+      background: rgba(255,255,255,0.1);
+      flex-shrink: 0;
+    }
+
+    .tick-emoji { font-size: 20px; flex-shrink: 0; line-height: 1; }
+
+    .tick-label {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .tick-item.reached .tick-label { color: rgba(200,80,80,0.6); }
+    .tick-item.next    .tick-label { color: #ffcc88; }
+
+    /* badge ALCANZADO / SIGUIENTE */
+    .tick-badge {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 10px;
+      letter-spacing: 2px;
+      padding: 2px 6px;
+      flex-shrink: 0;
+    }
+
+    .tick-item.reached .tick-badge { background: rgba(200,0,0,0.25); color: #c00; }
+    .tick-item.next    .tick-badge { background: rgba(255,140,0,0.2); color: #ff8c00; animation: pulse-badge 1.5s ease-in-out infinite; }
+    @keyframes pulse-badge { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* separador entre loops */
+    .tick-divider {
+      display: inline-flex;
+      align-items: center;
+      padding: 0 30px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: rgba(255,255,255,0.1);
+      flex-shrink: 0;
+    }
+
+    /* ── NOTIFICACIÓN ── */
+    #notif { position:fixed; top:10px; right:-500px; background:rgba(0,0,0,0.9); border-left:3px solid #c00; padding:8px 16px; font-family:'Rajdhani',sans-serif; transition:right 0.4s cubic-bezier(.23,1,.32,1); z-index:90; }
+    #notif.show { right:10px; }
+    .notif-top { font-size:15px; font-weight:700; color:#fff; }
+    .notif-top b { color:#ff4444; }
+    .notif-bot { font-size:11px; color:#888; font-weight:600; }
+
+    /* ── CELEBRACIÓN ── */
+    #cel { position:fixed; inset:0; pointer-events:none; z-index:100; opacity:0; transition:opacity 0.3s; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    #cel.show { opacity:1; }
+    .cel-glow { position:absolute; inset:0; background:radial-gradient(ellipse at center,rgba(200,0,0,0.25) 0%,transparent 65%); }
+    .cel-main { font-family:'Bebas Neue',sans-serif; font-size:62px; color:#fff; letter-spacing:5px; position:relative; z-index:1; text-align:center; }
+    .cel-desc { font-family:'Bebas Neue',sans-serif; font-size:26px; color:#ff8c00; letter-spacing:3px; position:relative; z-index:1; text-align:center; margin-top:6px; }
+    .particle { position:fixed; animation:fall 1.6s ease-in forwards; pointer-events:none; z-index:99; }
+    @keyframes fall { 0%{transform:translateY(-20px) rotate(0deg);opacity:1} 100%{transform:translateY(115vh) rotate(540deg);opacity:0} }
+  </style>
+</head>
+<body>
+
+<div id="ticker-bar">
+
+  <!-- IZQUIERDA: progreso -->
+  <div id="left-block">
+    <div class="left-title">MARATÓN DE BITS</div>
+    <div class="left-total" id="tot">0 <small>/ 100K</small></div>
+    <div class="mini-bar-wrap">
+      <div id="mini-bar2"></div>
+      <div id="mini-bar1"></div>
+    </div>
+    <div class="left-channels">
+      <div class="lch">
+        <div class="lch-dot c1"></div>
+        <b id="v1">0</b>
+        <span class="cdot" id="d1"></span>
+      </div>
+      <div style="color:#333;font-size:10px">|</div>
+      <div class="lch">
+        <div class="lch-dot c2"></div>
+        <b id="v2">0</b>
+        <span class="cdot" id="d2"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- LABEL VERTICAL -->
+  <div id="center-label"><span>RETOS</span></div>
+
+  <!-- TICKER -->
+  <div id="right-ticker">
+    <div id="ticker-track"></div>
+  </div>
+
+</div>
+
+<!-- notificación -->
+<div id="notif">
+  <div class="notif-top" id="ntop">usuario donó <b>0</b> bits</div>
+  <div class="notif-bot" id="nbot">en el canal de MarioTQ</div>
+</div>
+
+<!-- celebración -->
+<div id="cel">
+  <div class="cel-glow"></div>
+  <div class="cel-main" id="cmain">¡RETO DESBLOQUEADO!</div>
+  <div class="cel-desc" id="cdesc"></div>
+</div>
+
+<script>
+const MILESTONES = [
+  { bits: 10000,  emoji: '🎣', label: 'Ir a pescar' },
+  { bits: 30000,  emoji: '💦', label: 'Globazos con harina' },
+  { bits: 40000,  emoji: '🏊', label: 'Ir a balneario' },
+  { bits: 50000,  emoji: '😱', label: 'Depilada con cera' },
+  { bits: 60000,  emoji: '🧪', label: 'Experimento casero' },
+  { bits: 70000,  emoji: '🐕🐈', label: 'Acampar con Chopo y Genji' },
+  { bits: 80000,  emoji: '🎯', label: 'Reto de la banda' },
+  { bits: 90000,  emoji: '🩲', label: 'Balneario en tanga' },
+  { bits: 100000, emoji: '🛵', label: 'Rapizza juntos en vivo' },
+];
+
+const MAX_GOAL = 100000;
+const ID1 = '135201683', ID2 = '75262446';
+const TOKEN1 = '5gxdemktqjg5bkj13lhqsl3gytxy3t';
+const TOKEN2 = 'b9pffqqf2ko27k3lkbabpqw70fwexv';
+const INIT_B1 = 11200, INIT_B2 = 15270;
+const S = { b1: INIT_B1, b2: INIT_B2 };
+const triggered = new Set();
+triggered.add(10000);
+
+function save() { localStorage.setItem('mbits6', JSON.stringify({ b1: S.b1, b2: S.b2 })); }
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem('mbits6') || '{}');
+    if (d.b1) S.b1 = Math.max(INIT_B1, d.b1);
+    if (d.b2) S.b2 = Math.max(INIT_B2, d.b2);
+  } catch(e) {}
+}
+
+// ── Ticker ────────────────────────────────────
+let tickerAnim = null;
+
+function buildTicker(total) {
+  const track = document.getElementById('ticker-track');
+  // pausa animación para reconstruir
+  track.style.animation = 'none';
+  track.innerHTML = '';
+
+  const makeSet = () => {
+    MILESTONES.forEach((m, i) => {
+      let cls = '';
+      if (total >= m.bits) cls = 'reached';
+      else if (i === MILESTONES.findIndex(x => total < x.bits)) cls = 'next';
+
+      const item = document.createElement('div');
+      item.className = 'tick-item ' + cls;
+
+      const kbits = (m.bits / 1000).toFixed(0) + ',000';
+      let badge = '';
+      if (cls === 'reached') badge = '<span class="tick-badge">✓ ALCANZADO</span>';
+      if (cls === 'next')    badge = '<span class="tick-badge">▶ SIGUIENTE</span>';
+
+      item.innerHTML = `
+        <span class="tick-num">RETO ${i+1}</span>
+        <span class="tick-bits">${kbits} BITS</span>
+        <span class="tick-sep"></span>
+        <span class="tick-emoji">${m.emoji}</span>
+        <span class="tick-label">${m.label}</span>
+        ${badge}`;
+      track.appendChild(item);
+    });
+
+    // separador entre loops
+    const div = document.createElement('div');
+    div.className = 'tick-divider';
+    div.textContent = '· · · · · · ·';
+    track.appendChild(div);
+  };
+
+  // duplicar para loop continuo
+  makeSet();
+  makeSet();
+
+  // calcular duración según ancho del contenido
+  requestAnimationFrame(() => {
+    const halfW = track.scrollWidth / 2;
+    const speed = 80; // px por segundo — más lento = más legible
+    const duration = halfW / speed;
+
+    track.style.animation = 'none';
+    // inject keyframes
+    const styleId = 'ticker-kf';
+    let styleEl = document.getElementById(styleId);
+    if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = styleId; document.head.appendChild(styleEl); }
+    styleEl.textContent = `@keyframes scroll-ticker { 0%{transform:translateX(0)} 100%{transform:translateX(-${halfW}px)} }`;
+
+    // forzar reflow antes de reasignar animación
+    void track.offsetWidth;
+    track.style.animation = `scroll-ticker ${duration}s linear infinite`;
+  });
+}
+
+// ── UI ───────────────────────────────────────
+function updateUI() {
+  const total = S.b1 + S.b2;
+  const pct   = Math.min(100, (total / MAX_GOAL) * 100);
+  const pct1  = Math.min(100, (S.b1  / MAX_GOAL) * 100);
+
+  document.getElementById('tot').innerHTML = `${total.toLocaleString('es-MX')} <small>/ 100K</small>`;
+  document.getElementById('v1').textContent = S.b1.toLocaleString('es-MX');
+  document.getElementById('v2').textContent = S.b2.toLocaleString('es-MX');
+  document.getElementById('mini-bar1').style.width = pct1 + '%';
+  document.getElementById('mini-bar2').style.width = pct + '%';
+
+  buildTicker(total);
+
+  MILESTONES.forEach(m => {
+    if (total >= m.bits && !triggered.has(m.bits)) {
+      triggered.add(m.bits);
+      celebrate(m);
+    }
+  });
+
+  save();
+}
+
+// ── Celebración ──────────────────────────────
+function celebrate(m) {
+  document.getElementById('cmain').textContent = m.bits === MAX_GOAL ? '¡META FINAL!' : '¡RETO DESBLOQUEADO!';
+  document.getElementById('cdesc').textContent = m.emoji + ' ' + m.label;
+  const el = document.getElementById('cel');
+  el.classList.add('show');
+  spawnParticles();
+  setTimeout(() => el.classList.remove('show'), m.bits === MAX_GOAL ? 8000 : 5000);
+}
+
+function spawnParticles() {
+  const e = ['🔥','⚡','💎','⭐','🎉','🏆'];
+  for (let i = 0; i < 30; i++) {
+    setTimeout(() => {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.textContent = e[Math.floor(Math.random() * e.length)];
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.fontSize = (12 + Math.random() * 14) + 'px';
+      p.style.animationDelay = Math.random() * 0.5 + 's';
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 2200);
+    }, i * 35);
+  }
+}
+
+// ── Notificaciones ───────────────────────────
+let notifQ = [], notifShowing = false;
+function queueNotif(u, a, c) { notifQ.push({ u, a, c }); if (!notifShowing) showNextNotif(); }
+function showNextNotif() {
+  if (!notifQ.length) { notifShowing = false; return; }
+  notifShowing = true;
+  const { u, a, c } = notifQ.shift();
+  document.getElementById('ntop').innerHTML = `${u} donó <b>${a.toLocaleString('es-MX')}</b> bits`;
+  document.getElementById('nbot').textContent = 'en el canal de ' + c;
+  const el = document.getElementById('notif');
+  el.classList.add('show');
+  setTimeout(() => { el.classList.remove('show'); setTimeout(showNextNotif, 500); }, 3500);
+}
+
+// ── EventSub ─────────────────────────────────
+function dot(n, st) { document.getElementById('d' + n).className = 'cdot ' + st; }
+
+async function subscribeCheer(sessionId, broadcasterId, token) {
+  const t = token.startsWith('oauth:') ? token.slice(6) : token;
+  const v = await fetch('https://id.twitch.tv/oauth2/validate', { headers: { 'Authorization': 'OAuth ' + t } });
+  if (!v.ok) throw new Error('Token inválido');
+  const { client_id } = await v.json();
+  await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + t, 'Client-Id': client_id, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'channel.cheer', version: '1', condition: { broadcaster_user_id: broadcasterId }, transport: { method: 'websocket', session_id: sessionId } })
+  });
+}
+
+function connectPS(id, token, ch) {
+  dot(ch, 'wait');
+  const ws = new WebSocket('wss://eventsub.wss.twitch.tv/ws');
+  ws.onmessage = async (ev) => {
+    const msg = JSON.parse(ev.data);
+    const type = msg.metadata?.message_type;
+    if (type === 'session_welcome') {
+      try { await subscribeCheer(msg.payload.session.id, id, token); dot(ch, 'ok'); }
+      catch(e) { console.error('ch' + ch, e); dot(ch, 'err'); }
+    }
+    if (type === 'notification') {
+      try {
+        const ev2 = msg.payload.event;
+        if (ch === 1) S.b1 += ev2.bits; else S.b2 += ev2.bits;
+        updateUI();
+        queueNotif(ev2.user_name || 'Anónimo', ev2.bits, ch === 1 ? 'MarioTQ' : 'Akim');
+      } catch(e) {}
+    }
+    if (type === 'session_reconnect') { ws.close(); setTimeout(() => connectPS(id, token, ch), 500); }
+  };
+  ws.onerror = () => dot(ch, 'err');
+  ws.onclose = () => { dot(ch, 'err'); setTimeout(() => connectPS(id, token, ch), 5000); };
+}
+
+// ── Init ─────────────────────────────────────
+load();
+updateUI();
+connectPS(ID1, TOKEN1, 1);
+connectPS(ID2, TOKEN2, 2);
+</script>
+</body>
+</html>
