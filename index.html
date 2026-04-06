@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Meta de Bits</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: transparent;
+      overflow: hidden;
+      width: 620px;
+      height: 900px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: flex-start;
+    }
+
+    #widget {
+      width: 620px;
+      background: rgba(0,0,0,0.88);
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: #c00;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .header-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 52px;
+      letter-spacing: 5px;
+      color: #fff;
+      line-height: 1;
+    }
+    .header-total {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px;
+      color: #fff;
+      letter-spacing: 2px;
+      line-height: 1;
+    }
+    .header-total small {
+      font-size: 26px;
+      color: rgba(255,255,255,0.9);
+      letter-spacing: 1px;
+    }
+
+    /* ── CANALES ── */
+    .channels {
+      display: flex;
+      flex-direction: column;
+      padding: 14px 18px;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .ch {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .ch-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 1px;
+    }
+    .ch-dot { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; }
+    .ch-dot.c1 { background: #ee2222; }
+    .ch-dot.c2 { background: #ff8c00; }
+    .ch-val {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 46px;
+      color: #fff;
+      letter-spacing: 2px;
+      line-height: 1;
+    }
+
+    .cdot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#333; margin-left:5px; vertical-align:middle; transition:background 0.4s; }
+    .cdot.ok   { background:#4caf50; }
+    .cdot.err  { background:#e83333; }
+    .cdot.wait { background:#ff9800; animation:blink 1s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── BARRA ── */
+    .bar-section {
+      padding: 10px 18px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .bar-pct-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 3px;
+      color: #fff;
+      margin-bottom: 7px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .bar-pct-label span:last-child { color: #fff; }
+    .bar-outer {
+      height: 18px;
+      background: rgba(255,255,255,0.08);
+      position: relative;
+    }
+    #bar2 { position:absolute; inset:0; width:0%; background:#ff8c00; transition:width 1s cubic-bezier(.23,1,.32,1); }
+    #bar1 { position:absolute; inset:0; width:0%; background:#ee2222; transition:width 1s cubic-bezier(.23,1,.32,1) 0.05s; }
+
+    /* timer */
+    #timer-bar { height: 3px; background: rgba(255,255,255,0.05); position:relative; overflow:hidden; }
+    #timer-fill { position:absolute; left:0; top:0; bottom:0; background:#c00; width:0%; }
+
+    /* ── RETOS ── */
+    #retos-panel { max-height: 0; overflow: hidden; transition: max-height 0.7s cubic-bezier(.23,1,.32,1); }
+    #retos-panel.open { max-height: 900px; }
+
+    .retos-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 4px;
+      color: #fff;
+      padding: 10px 18px 7px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      background: rgba(200,0,0,0.15);
+    }
+
+    .reto {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 18px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      transition: background 0.3s;
+    }
+    .reto.reached { background: rgba(140,0,0,0.2); }
+    .reto.next    { background: rgba(255,140,0,0.12); }
+
+    .reto-left { flex-shrink:0; width:72px; text-align:right; }
+    .reto-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px;
+      letter-spacing: 2px;
+      color: rgba(255,255,255,0.3);
+      line-height: 1;
+    }
+    .reto.reached .reto-num { color: rgba(200,80,80,0.6); }
+    .reto.next    .reto-num { color: rgba(255,140,0,0.9); }
+
+    .reto-bits {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 34px;
+      color: #fff;
+      letter-spacing: 1px;
+      line-height: 1;
+    }
+    .reto.reached .reto-bits { color: rgba(200,80,80,0.6); text-decoration: line-through; }
+    .reto.next    .reto-bits { color: #ff8c00; }
+
+    .reto-divider { width:2px; height:48px; background:rgba(255,255,255,0.1); flex-shrink:0; }
+    .reto.reached .reto-divider { background: rgba(200,80,80,0.25); }
+    .reto.next    .reto-divider { background: rgba(255,140,0,0.5); }
+
+    .reto-right { display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
+    .reto-emoji { font-size: 28px; flex-shrink:0; line-height:1; }
+    .reto-label {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+    .reto.reached .reto-label { color: rgba(200,80,80,0.65); }
+    .reto.next    .reto-label { color: #ffcc88; }
+
+    .check { font-size: 18px; color: #c00; flex-shrink:0; margin-left:auto; }
+    .reto.next .check { color: #ff8c00; }
+
+    /* ── CELEBRACIÓN ── */
+    #cel { width:620px; opacity:0; pointer-events:none; transition:opacity 0.4s; margin-top:6px; }
+    #cel.show { opacity:1; }
+    .cel-main {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px;
+      color: #fff;
+      letter-spacing: 4px;
+      background: rgba(180,0,0,0.92);
+      padding: 10px 18px;
+      line-height: 1;
+    }
+    .cel-desc {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: #ffcc88;
+      letter-spacing: 3px;
+      background: rgba(0,0,0,0.88);
+      padding: 7px 18px;
+    }
+
+    /* ── NOTIF ── */
+    #notif { position:fixed; top:10px; left:-500px; background:rgba(0,0,0,0.92); border-right:4px solid #c00; padding:10px 20px; font-family:'Rajdhani',sans-serif; transition:left 0.4s cubic-bezier(.23,1,.32,1); z-index:90; }
+    #notif.show { left:10px; }
+    .notif-top { font-size:22px; font-weight:700; color:#fff; }
+    .notif-top b { color:#ff4444; }
+    .notif-bot { font-size:16px; color:#888; font-weight:700; }
+  </style>
+</head>
+<body>
+
+<div id="widget">
+  <div id="timer-bar"><div id="timer-fill"></div></div>
+
+  <div class="header">
+    <div class="header-title">META DE BITS</div>
+    <div class="header-total" id="tot">0 <small>/ 100K</small></div>
+  </div>
+
+  <div class="channels">
+    <div class="ch">
+      <div class="ch-left">
+        <div class="ch-dot c1"></div>
+        MarioTQ
+        <span class="cdot" id="d1"></span>
+      </div>
+      <span class="ch-val" id="v1">0</span>
+    </div>
+    <div class="ch">
+      <div class="ch-left">
+        <div class="ch-dot c2"></div>
+        Akim
+        <span class="cdot" id="d2"></span>
+      </div>
+      <span class="ch-val" id="v2">0</span>
+    </div>
+  </div>
+
+  <div id="retos-panel">
+    <div class="bar-section">
+      <div class="bar-pct-label">
+        <span>PROGRESO</span>
+        <span id="bpct">0%</span>
+      </div>
+      <div class="bar-outer">
+        <div id="bar2"></div>
+        <div id="bar1"></div>
+      </div>
+    </div>
+    <div class="retos-title">RETOS DEL MARATÓN</div>
+    <div id="retos"></div>
+  </div>
+</div>
+
+<div id="cel">
+  <div class="cel-main" id="cmain">¡RETO DESBLOQUEADO!</div>
+  <div class="cel-desc" id="cdesc"></div>
+</div>
+
+<div id="notif">
+  <div class="notif-top" id="ntop">usuario donó <b>0</b> bits</div>
+  <div class="notif-bot" id="nbot">en el canal de MarioTQ</div>
+</div>
+
+<script>
+const MILESTONES = [
+  { bits: 10000,  emoji: '🎣', label: 'Ir a pescar' },
+  { bits: 30000,  emoji: '💦', label: 'Globazos con harina' },
+  { bits: 40000,  emoji: '🏊', label: 'Ir a balneario' },
+  { bits: 50000,  emoji: '😱', label: 'Depilada con cera' },
+  { bits: 60000,  emoji: '🧪', label: 'Experimento casero' },
+  { bits: 70000,  emoji: '🐕🐈', label: 'Acampar con Chopo y Genji' },
+  { bits: 80000,  emoji: '🎯', label: 'Reto de la banda' },
+  { bits: 90000,  emoji: '🩲', label: 'Balneario en tanga' },
+  { bits: 100000, emoji: '🛵', label: 'Rapizza juntos en vivo' },
+];
+
+const MAX_GOAL = 100000;
+const ID1 = '135201683', ID2 = '75262446';
+const TOKEN1 = '5gxdemktqjg5bkj13lhqsl3gytxy3t';
+const TOKEN2 = 'b9pffqqf2ko27k3lkbabpqw70fwexv';
+const INIT_B1 = 21940, INIT_B2 = 20415;
+const S = { b1: INIT_B1, b2: INIT_B2 };
+const triggered = new Set();
+triggered.add(10000);
+
+function save() { localStorage.setItem('mbitsA', JSON.stringify({ b1: S.b1, b2: S.b2 })); }
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem('mbitsA') || '{}');
+    if (d.b1) S.b1 = Math.max(INIT_B1, d.b1);
+    if (d.b2) S.b2 = Math.max(INIT_B2, d.b2);
+  } catch(e) {}
+}
+
+function buildRetos() {
+  const cont = document.getElementById('retos');
+  cont.innerHTML = '';
+  MILESTONES.forEach((m, i) => {
+    const el = document.createElement('div');
+    el.className = 'reto';
+    el.id = 'r_' + m.bits;
+    el.innerHTML = `
+      <div class="reto-left">
+        <div class="reto-num">RETO ${i+1}</div>
+        <div class="reto-bits">${(m.bits/1000).toFixed(0)}K</div>
+      </div>
+      <div class="reto-divider"></div>
+      <div class="reto-right">
+        <span class="reto-emoji">${m.emoji}</span>
+        <span class="reto-label">${m.label}</span>
+      </div>
+      <span class="check" id="chk_${m.bits}"></span>`;
+    cont.appendChild(el);
+  });
+}
+
+function updateUI() {
+  const total = S.b1 + S.b2;
+  const pct   = Math.min(100, (total / MAX_GOAL) * 100);
+  const pct1  = Math.min(100, (S.b1  / MAX_GOAL) * 100);
+  document.getElementById('tot').innerHTML  = `${total.toLocaleString('es-MX')} <small>/ 100K</small>`;
+  document.getElementById('v1').textContent = S.b1.toLocaleString('es-MX');
+  document.getElementById('v2').textContent = S.b2.toLocaleString('es-MX');
+  document.getElementById('bpct').textContent = pct.toFixed(1) + '%';
+  document.getElementById('bar1').style.width = pct1 + '%';
+  document.getElementById('bar2').style.width = pct  + '%';
+  let nextSet = false;
+  MILESTONES.forEach(m => {
+    const el  = document.getElementById('r_' + m.bits);
+    const chk = document.getElementById('chk_' + m.bits);
+    if (!el) return;
+    if (total >= m.bits) {
+      el.className = 'reto reached'; if (chk) chk.textContent = '✓';
+    } else if (!nextSet) {
+      el.className = 'reto next'; if (chk) chk.textContent = '▶'; nextSet = true;
+    } else {
+      el.className = 'reto'; if (chk) chk.textContent = '';
+    }
+  });
+  MILESTONES.forEach(m => {
+    if (total >= m.bits && !triggered.has(m.bits)) { triggered.add(m.bits); celebrate(m); }
+  });
+  save();
+}
+
+const CLOSED_MS = 3 * 60 * 1000, OPEN_MS = 30 * 1000;
+const panel = document.getElementById('retos-panel');
+const timerFill = document.getElementById('timer-fill');
+
+function runCycle() {
+  panel.classList.remove('open');
+  timerFill.style.transition = 'none';
+  timerFill.style.width = '0%';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    timerFill.style.transition = `width ${CLOSED_MS}ms linear`;
+    timerFill.style.width = '100%';
+  }));
+  setTimeout(() => {
+    panel.classList.add('open');
+    timerFill.style.transition = 'none';
+    timerFill.style.width = '0%';
+    setTimeout(runCycle, OPEN_MS);
+  }, CLOSED_MS);
+}
+
+function celebrate(m) {
+  document.getElementById('cmain').textContent = m.bits === MAX_GOAL ? '¡META FINAL!' : '¡RETO DESBLOQUEADO!';
+  document.getElementById('cdesc').textContent = m.emoji + ' ' + m.label;
+  panel.classList.add('open');
+  const el = document.getElementById('cel');
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), m.bits === MAX_GOAL ? 8000 : 5000);
+}
+
+let notifQ = [], notifShowing = false;
+function queueNotif(u, a, c) { notifQ.push({ u, a, c }); if (!notifShowing) showNextNotif(); }
+function showNextNotif() {
+  if (!notifQ.length) { notifShowing = false; return; }
+  notifShowing = true;
+  const { u, a, c } = notifQ.shift();
+  document.getElementById('ntop').innerHTML = `${u} donó <b>${a.toLocaleString('es-MX')}</b> bits`;
+  document.getElementById('nbot').textContent = 'en el canal de ' + c;
+  const el = document.getElementById('notif');
+  el.classList.add('show');
+  setTimeout(() => { el.classList.remove('show'); setTimeout(showNextNotif, 500); }, 3500);
+}
+
+function dot(n, st) { document.getElementById('d' + n).className = 'cdot ' + st; }
+
+async function subscribeCheer(sessionId, broadcasterId, token) {
+  const t = token.startsWith('oauth:') ? token.slice(6) : token;
+  const v = await fetch('https://id.twitch.tv/oauth2/validate', { headers: { 'Authorization': 'OAuth ' + t } });
+  if (!v.ok) throw new Error('Token inválido');
+  const { client_id } = await v.json();
+  await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + t, 'Client-Id': client_id, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'channel.cheer', version: '1', condition: { broadcaster_user_id: broadcasterId }, transport: { method: 'websocket', session_id: sessionId } })
+  });
+}
+
+function connectPS(id, token, ch) {
+  dot(ch, 'wait');
+  const ws = new WebSocket('wss://eventsub.wss.twitch.tv/ws');
+  ws.onmessage = async (ev) => {
+    const msg = JSON.parse(ev.data);
+    const type = msg.metadata?.message_type;
+    if (type === 'session_welcome') {
+      try { await subscribeCheer(msg.payload.session.id, id, token); dot(ch, 'ok'); }
+      catch(e) { console.error('ch' + ch, e); dot(ch, 'err'); }
+    }
+    if (type === 'notification') {
+      try {
+        const ev2 = msg.payload.event;
+        if (ch === 1) S.b1 += ev2.bits; else S.b2 += ev2.bits;
+        updateUI();
+        queueNotif(ev2.user_name || 'Anónimo', ev2.bits, ch === 1 ? 'MarioTQ' : 'Akim');
+      } catch(e) {}
+    }
+    if (type === 'session_reconnect') { ws.close(); setTimeout(() => connectPS(id, token, ch), 500); }
+  };
+  ws.onerror = () => dot(ch, 'err');
+  ws.onclose = () => { dot(ch, 'err'); setTimeout(() => connectPS(id, token, ch), 5000); };
+}
+
+load(); buildRetos(); updateUI(); runCycle();
+connectPS(ID1, TOKEN1, 1);
+connectPS(ID2, TOKEN2, 2);
+</script>
+</body>
+</html>
